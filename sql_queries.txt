@@ -1,0 +1,151 @@
+SQL QUERIES EXECUTION LOG
+=========================
+
+STEP 1: Data Loading - COMPLETED
+-------------------
+Task: Create pandemic schema, set as default, import data
+
+1. Create pandemic schema:
+   CREATE SCHEMA IF NOT EXISTS pandemic;
+
+2. Set as default schema:
+   USE pandemic;
+
+3. Import data using MySQL Import wizard (manual step)
+   - Table: infectious_cases
+   - Source: CSV file (from theme 3)
+
+4. Verify data loaded:
+   SELECT COUNT(*) FROM infectious_cases;
+   
+   SELECT * FROM infectious_cases LIMIT 10;
+
+5. Check table structure:
+   DESCRIBE infectious_cases;
+   
+   Output:
+   +----------------------+-------------+------+-----+---------+-------+
+   | Field                | Type        | Null | Key | Default | Extra |
+   +----------------------+-------------+------+-----+---------+-------+
+   | Entity               | varchar(50) | YES  |     | NULL    |       |
+   | Code                 | varchar(50) | YES  |     | NULL    |       |
+   | Year                 | int         | YES  |     | NULL    |       |
+   | Number_yaws          | varchar(50) | YES  |     | NULL    |       |
+   | polio_cases          | int         | YES  |     | NULL    |       |
+   | cases_guinea_worm    | int         | YES  |     | NULL    |       |
+   | Number_rabies        | double      | YES  |     | NULL    |       |
+   | Number_malaria       | double      | YES  |     | NULL    |       |
+   | Number_hiv           | double      | YES  |     | NULL    |       |
+   | Number_tuberculosis  | double      | YES  |     | NULL    |       |
+   | Number_smallpox      | varchar(50) | YES  |     | NULL    |       |
+   | Number_cholera_cases | int         | YES  |     | NULL    |       |
+   +----------------------+-------------+------+-----+---------+-------+
+
+Status: COMPLETED
+
+---
+
+STEP 2: Normalization to 3NF
+-------------------
+Task: Normalize infectious_cases table to 3NF
+
+Problem: Entity and Code repeat in every row (functional dependency)
+
+Solution: Split into 2 tables:
+1. entities - stores unique Entity and Code pairs
+2. infectious_cases_normalized - stores case data with FK to entities
+
+Queries to execute:
+
+-- 1. Create entities table
+-- Note: Removed UNIQUE KEY (code) to handle duplicate empty strings
+CREATE TABLE entities (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    entity VARCHAR(50) NOT NULL,
+    code VARCHAR(50),
+    UNIQUE KEY (entity, code)
+);
+
+-- 2. Create normalized cases table
+CREATE TABLE infectious_cases_normalized (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    entity_id INT NOT NULL,
+    Year INT,
+    Number_yaws VARCHAR(50),
+    polio_cases INT,
+    cases_guinea_worm INT,
+    Number_rabies DOUBLE,
+    Number_malaria DOUBLE,
+    Number_hiv DOUBLE,
+    Number_tuberculosis DOUBLE,
+    Number_smallpox VARCHAR(50),
+    Number_cholera_cases INT,
+    FOREIGN KEY (entity_id) REFERENCES entities(id)
+);
+
+-- 3. Populate entities table with unique Entity, Code pairs
+INSERT INTO entities (entity, code)
+SELECT DISTINCT Entity, Code 
+FROM infectious_cases 
+WHERE Entity IS NOT NULL AND Entity != '';
+
+-- 4. Populate normalized cases table
+INSERT INTO infectious_cases_normalized 
+(entity_id, Year, Number_yaws, polio_cases, cases_guinea_worm, 
+ Number_rabies, Number_malaria, Number_hiv, Number_tuberculosis, 
+ Number_smallpox, Number_cholera_cases)
+SELECT e.id, ic.Year, ic.Number_yaws, ic.polio_cases, ic.cases_guinea_worm,
+       ic.Number_rabies, ic.Number_malaria, ic.Number_hiv, ic.Number_tuberculosis,
+       ic.Number_smallpox, ic.Number_cholera_cases
+FROM infectious_cases ic
+JOIN entities e ON ic.Entity = e.entity AND ic.Code = e.code;
+
+-- 5. Verify normalization
+SELECT COUNT(*) FROM infectious_cases; -- Original count
+SELECT COUNT(*) FROM infectious_cases_normalized; -- Should match
+SELECT COUNT(*) FROM entities; -- Number of unique entities
+
+Status: COMPLETED (user confirmed working)
+
+---
+
+STEP 3: Data Analysis
+-------------------
+Task: Calculate statistics for Number_rabies by Entity and Code
+
+Query:
+SELECT 
+    e.entity,
+    e.code,
+    AVG(icn.Number_rabies) as avg_rabies,
+    MIN(icn.Number_rabies) as min_rabies,
+    MAX(icn.Number_rabies) as max_rabies,
+    SUM(icn.Number_rabies) as sum_rabies
+FROM infectious_cases_normalized icn
+JOIN entities e ON icn.entity_id = e.id
+WHERE icn.Number_rabies IS NOT NULL 
+    AND icn.Number_rabies != ''
+    AND icn.Number_rabies > 0
+GROUP BY e.entity, e.code
+ORDER BY avg_rabies DESC
+LIMIT 10;
+
+Alternative (using original table):
+SELECT 
+    Entity,
+    Code,
+    AVG(Number_rabies) as avg_rabies,
+    MIN(Number_rabies) as min_rabies,
+    MAX(Number_rabies) as max_rabies,
+    SUM(Number_rabies) as sum_rabies
+FROM infectious_cases
+WHERE Number_rabies IS NOT NULL 
+    AND Number_rabies != ''
+    AND Number_rabies > 0
+GROUP BY Entity, Code
+ORDER BY avg_rabies DESC
+LIMIT 10;
+
+Status: PENDING
+
+---
