@@ -105,8 +105,6 @@ SELECT COUNT(*) FROM infectious_cases; -- Original count
 SELECT COUNT(*) FROM infectious_cases_normalized; -- Should match
 SELECT COUNT(*) FROM entities; -- Number of unique entities
 
-Status: COMPLETED (user confirmed working)
-
 ---
 
 STEP 3: Data Analysis
@@ -114,38 +112,22 @@ STEP 3: Data Analysis
 Task: Calculate statistics for Number_rabies by Entity and Code
 
 Query:
-SELECT 
+SELECT
     e.entity,
     e.code,
-    AVG(icn.Number_rabies) as avg_rabies,
-    MIN(icn.Number_rabies) as min_rabies,
-    MAX(icn.Number_rabies) as max_rabies,
-    SUM(icn.Number_rabies) as sum_rabies
+    ROUND(AVG(icn.Number_rabies), 3) as avg_rabies,
+    ROUND(MIN(icn.Number_rabies), 3) as min_rabies,
+    ROUND(MAX(icn.Number_rabies), 3) as max_rabies,
+    ROUND(SUM(icn.Number_rabies), 3) as sum_rabies
 FROM infectious_cases_normalized icn
 JOIN entities e ON icn.entity_id = e.id
-WHERE icn.Number_rabies IS NOT NULL 
+WHERE icn.Number_rabies IS NOT NULL
     AND icn.Number_rabies != ''
     AND icn.Number_rabies > 0
 GROUP BY e.entity, e.code
 ORDER BY avg_rabies DESC
 LIMIT 10;
 
-Alternative (using original table):
-SELECT 
-    Entity,
-    Code,
-    AVG(Number_rabies) as avg_rabies,
-    MIN(Number_rabies) as min_rabies,
-    MAX(Number_rabies) as max_rabies,
-    SUM(Number_rabies) as sum_rabies
-FROM infectious_cases
-WHERE Number_rabies IS NOT NULL 
-    AND Number_rabies != ''
-    AND Number_rabies > 0
-GROUP BY Entity, Code
-ORDER BY avg_rabies DESC
-LIMIT 10;
-
-Status: PENDING
-
 ---
+
+STEP 4:
