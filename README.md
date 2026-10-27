@@ -31,14 +31,18 @@
 
 **Screenshot of the result**
 
-![p4_date_calculations](results/p4_date_calculations.png)
+![p4_date_calculations](results/p4_year_difference_calculation.png)
 
 ### Task 5: Custom Function
-**Description:** Build a function to calculate year differences or disease rates.
+**Description:** Create and use a custom function that:
+- Takes a year value as input
+- Returns the difference in years between current date and January 1st of that year
+- Uses TIMESTAMPDIFF() and MAKEDATE() functions internally
+- Includes DETERMINISTIC declaration for MySQL compatibility
 
 **Screenshot of the result**
 
-![p5_custom_function](results/p5_custom_function.png)
+![p5_custom_function](results/p5_custom_function_year_diff.png)
 
 ## Folder Structure
 - `results/` - Contains screenshots and output files for each step

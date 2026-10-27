@@ -130,4 +130,52 @@ LIMIT 10;
 
 ---
 
-STEP 4:
+STEP 4: Year Difference Calculation
+-------------------
+Task: Find differences of years between original year as str and  date now
+
+Query:
+SELECT
+    original_year,
+    converted_year_into_date,
+    today_date,
+    TIMESTAMPDIFF(YEAR, converted_year_into_date, today_date) AS difference_in_years
+FROM (
+    SELECT
+        Year AS original_year,
+        MAKEDATE(Year, 1) AS converted_year_into_date,
+        CURDATE() AS today_date
+    FROM infectious_cases_normalized
+) AS subquery;
+
+---
+
+STEP 5: Custom function for calculate a year difference
+-------------------
+Task: Find differences of years between original year as str and  date now by creating custom function
+
+Query:
+-- Drop function if exists
+DROP FUNCTION IF EXISTS calc_year_diff;
+
+-- Create function
+DELIMITER //
+CREATE FUNCTION calc_year_diff(input_year INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    DECLARE result INT;
+    SET result = TIMESTAMPDIFF(YEAR, MAKEDATE(input_year, 1), CURDATE());
+    RETURN result;
+END //
+DELIMITER ;
+
+-- Test the function
+SELECT
+    Year AS original_year,
+    calc_year_diff(Year) AS year_difference
+FROM infectious_cases_normalized
+WHERE Year IS NOT NULL
+LIMIT 10;
+---
+
